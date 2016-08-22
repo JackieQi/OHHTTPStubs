@@ -27,6 +27,36 @@
  */
 
 
+#if swift(>=3.0)
+#else
+#if swift(>=2.2)
+    extension OHHTTPStubs {
+        private class func stubRequests(passingTest passingTest: OHHTTPStubsTestBlock, withStubResponse: OHHTTPStubsResponseBlock) -> OHHTTPStubsDescriptor {
+            return stubRequestsPassingTest(passingTest, withStubResponse: withStubResponse)
+        }
+    }
+
+    extension NSURLRequest {
+        var httpMethod: String? { return HTTPMethod }
+        var url: NSURL? { return URL }
+    }
+
+    extension NSURLComponents {
+        private convenience init?(url: NSURL, resolvingAgainstBaseURL: Bool) {
+            self.init(URL: url, resolvingAgainstBaseURL: resolvingAgainstBaseURL)
+        }
+    }
+
+    private typealias URLRequest = NSURLRequest
+
+    extension URLRequest {
+        private func value(forHTTPHeaderField key: String) -> String? {
+            return valueForHTTPHeaderField(key)
+        }
+    }
+#endif
+#endif
+
 
 // MARK: Syntaxic Sugar for OHHTTPStubs
 
@@ -119,7 +149,7 @@ public func isMethodDELETE() -> OHHTTPStubsTestBlock {
  * - Returns: a matcher (OHHTTPStubsTestBlock) that succeeds only if the request
  *            has the given scheme
  */
-public func isScheme(scheme: String) -> OHHTTPStubsTestBlock {
+public func isScheme(_ scheme: String) -> OHHTTPStubsTestBlock {
     return { req in req.url?.scheme == scheme }
 }
 
@@ -131,7 +161,7 @@ public func isScheme(scheme: String) -> OHHTTPStubsTestBlock {
  * - Returns: a matcher (OHHTTPStubsTestBlock) that succeeds only if the request
  *            has the given host
  */
-public func isHost(host: String) -> OHHTTPStubsTestBlock {
+public func isHost(_ host: String) -> OHHTTPStubsTestBlock {
     return { req in req.url?.host == host }
 }
 
@@ -146,8 +176,8 @@ public func isHost(host: String) -> OHHTTPStubsTestBlock {
  * - Note: URL paths are usually absolute and thus starts with a '/' (which you
  *         should include in the `path` parameter unless you're testing relative URLs)
  */
-public func isPath(path: String) -> OHHTTPStubsTestBlock {
-    return { req in req.url?.path == path }
+public func isPath(_ path: String) -> OHHTTPStubsTestBlock {
+    return { req in (req.url as NSURL?)?.path == path } // Need to cast to NSURL because URL.path does not behave like NSURL.path in Swift 3.0. URL.path does not stop at the first ';' and returns the entire string.
 }
 
 /**
@@ -161,8 +191,12 @@ public func isPath(path: String) -> OHHTTPStubsTestBlock {
  * - Note: URL paths are usually absolute and thus starts with a '/' (which you
  *         should include in the `path` parameter unless you're testing relative URLs)
  */
-public func pathStartsWith(path: String) -> OHHTTPStubsTestBlock {
+public func pathStartsWith(_ path: String) -> OHHTTPStubsTestBlock {
+#if swift(>=3.0)
     return { req in req.url?.path.hasPrefix(path) ?? false }
+#else
+    return { req in req.url?.path?.hasPrefix(path) ?? false }
+#endif
 }
 
 /**
@@ -173,7 +207,7 @@ public func pathStartsWith(path: String) -> OHHTTPStubsTestBlock {
  * - Returns: a matcher (OHHTTPStubsTestBlock) that succeeds only if the request path
  *            ends with the given extension
  */
-public func isExtension(ext: String) -> OHHTTPStubsTestBlock {
+public func isExtension(_ ext: String) -> OHHTTPStubsTestBlock {
     return { req in req.url?.pathExtension == ext }
 }
 
@@ -190,10 +224,10 @@ public func isExtension(ext: String) -> OHHTTPStubsTestBlock {
  *          (2) using `[q:nil]`, which matches a query parameter "?q" without a value at all
  */
 @available(iOS 8.0, OSX 10.10, *)
-public func containsQueryParams(params: [String:String?]) -> OHHTTPStubsTestBlock {
+public func containsQueryParams(_ params: [String:String?]) -> OHHTTPStubsTestBlock {
     return { req in
         if let url = req.url {
-            let comps = URLComponents(url: url, resolvingAgainstBaseURL: true)
+            let comps = NSURLComponents(url: url, resolvingAgainstBaseURL: true)
             if let queryItems = comps?.queryItems {
                 for (k,v) in params {
                     if queryItems.filter({ qi in qi.name == k && qi.value == v }).count == 0 { return false }
@@ -211,7 +245,7 @@ public func containsQueryParams(params: [String:String?]) -> OHHTTPStubsTestBloc
  *  
  * - Returns: a matcher that returns true if the `NSURLRequest`'s headers contain a value for the key name
  */
-public func hasHeaderNamed(name: String) -> OHHTTPStubsTestBlock {
+public func hasHeaderNamed(_ name: String) -> OHHTTPStubsTestBlock {
     return { (req: URLRequest) -> Bool in
         return req.value(forHTTPHeaderField: name) != nil
     }
@@ -225,7 +259,7 @@ public func hasHeaderNamed(name: String) -> OHHTTPStubsTestBlock {
  * - Returns: a matcher that returns true if the `NSURLRequest`'s headers contain a value for the key name and it's value
  *            is equal to the parameter value
  */
-public func hasHeaderNamed(name: String, value: String) -> OHHTTPStubsTestBlock {
+public func hasHeaderNamed(_ name: String, value: String) -> OHHTTPStubsTestBlock {
     return { (req: URLRequest) -> Bool in
         return req.value(forHTTPHeaderField: name) == value
     }
