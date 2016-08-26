@@ -103,7 +103,7 @@ class SwiftHelpersTests : XCTestCase {
     testIsPath("foo/bar/baz", isAbsoluteMatcher: false)
   }
   
-  func testIsPath(_ path: String, isAbsoluteMatcher: Bool) {
+  func testIsPath(path: String, isAbsoluteMatcher: Bool) {
     let matcher = isPath(path)
     
     let urls = [
@@ -151,7 +151,7 @@ class SwiftHelpersTests : XCTestCase {
     testPathStartsWith("foo/bar", isAbsoluteMatcher: false)
   }
 
-  func testPathStartsWith(_ path: String, isAbsoluteMatcher: Bool) {
+  func testPathStartsWith(path: String, isAbsoluteMatcher: Bool) {
     let matcher = pathStartsWith(path)
 
     let urls = [
